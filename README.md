@@ -1,6 +1,6 @@
 # NotesFlow
 
-NotesFlow is a powerful, privacy-focused macOS menu bar application designed to automatically record, transcribe, and summarize your meetings and calls. It runs quietly in the background, capturing dual-channel audio (your microphone + system audio), transcribing it entirely on-device, and generating intelligent summaries.
+NotesFlow is a powerful, privacy-focused macOS application designed to automatically record, transcribe, and summarize your meetings and calls. It runs quietly in the background, capturing dual-channel audio (your microphone + system audio), transcribing it entirely on-device, and generating intelligent summaries.
 
 ## ✨ Features
 
