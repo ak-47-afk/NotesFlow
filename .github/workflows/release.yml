@@ -1,0 +1,75 @@
+name: Build and Release DMG
+
+on:
+  push:
+    tags:
+      - 'v*' # Triggers on tags like v1.0, v1.2.3
+
+jobs:
+  build:
+    name: Build DMG
+    runs-on: macos-14
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Select Xcode Version
+        run: sudo xcode-select -s /Applications/Xcode_15.4.app
+
+      - name: Resolve Swift Packages
+        run: xcodebuild -resolvePackageDependencies -project NotesFlow.xcodeproj
+
+      - name: Build NotesFlow App
+        run: |
+          # Build the Xcode project for Release without code signing requirements 
+          # (For a fully signed app, you would need to install Apple Certificates via GitHub Secrets)
+          xcodebuild clean build \
+            -project NotesFlow.xcodeproj \
+            -scheme NotesFlow \
+            -configuration Release \
+            -destination 'generic/platform=macOS' \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            PROVISIONING_PROFILE_SPECIFIER="" \
+            SYMROOT="$(pwd)/build"
+
+      - name: Prepare App for DMG
+        run: |
+          mkdir -p dmg_staging
+          cp -R build/Release/NotesFlow.app dmg_staging/
+
+      - name: Install create-dmg
+        run: brew install create-dmg
+
+      - name: Create DMG
+        run: |
+          # Extract version from tag (e.g., v1.0.0 -> 1.0.0)
+          VERSION=${GITHUB_REF#refs/tags/v}
+          DMG_NAME="NotesFlow-$VERSION.dmg"
+          
+          # Create DMG
+          create-dmg \
+            --volname "NotesFlow" \
+            --window-pos 200 120 \
+            --window-size 600 400 \
+            --icon-size 100 \
+            --icon "NotesFlow.app" 175 120 \
+            --hide-extension "NotesFlow.app" \
+            --app-drop-link 425 120 \
+            "$DMG_NAME" \
+            "dmg_staging/"
+            
+          # Export DMG name as environment variable for next step
+          echo "DMG_NAME=$DMG_NAME" >> $GITHUB_ENV
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ env.DMG_NAME }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
