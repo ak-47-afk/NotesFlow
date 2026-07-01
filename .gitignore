@@ -1,0 +1,37 @@
+# Xcode build artifacts
+build/
+*.xcuserstate
+xcuserdata/
+*.xcworkspace/xcuserdata/
+DerivedData/
+
+# Distribution artifacts
+dist/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Test scratch scripts
+check_pmset*.swift
+test_pmset*.swift
+
+# Packages resolved (optional — some teams commit this)
+# MeetingAssistant.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
+
+# API keys and secrets — NEVER commit these
+*.plist.backup
+secrets/
+
+# Scratch Scripts and Artifacts
+/*.rb
+/*.swift
+/*.py
+/*.sh
+/*.json
+/*.m4a
+/*.dmg
+/dummy.txt
+/test_sc
+/build_dmg/
