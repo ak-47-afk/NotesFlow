@@ -22,16 +22,15 @@ jobs:
 
       - name: Build NotesFlow App
         run: |
-          # Build the Xcode project for Release without code signing requirements 
-          # (For a fully signed app, you would need to install Apple Certificates via GitHub Secrets)
+          # Build the Xcode project for Release with Ad-Hoc Code Signing (-)
           xcodebuild clean build \
             -project NotesFlow.xcodeproj \
             -scheme NotesFlow \
             -configuration Release \
             -destination 'generic/platform=macOS' \
-            CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGN_IDENTITY="-" \
+            CODE_SIGNING_REQUIRED=YES \
+            CODE_SIGNING_ALLOWED=YES \
             PROVISIONING_PROFILE_SPECIFIER="" \
             SYMROOT="$(pwd)/build"
 
