@@ -31,7 +31,7 @@ secrets/
 /*.sh
 /*.json
 /*.m4a
-/*.dmg
+
 /dummy.txt
 /test_sc
 /build_dmg/
