@@ -18,7 +18,10 @@ struct MeetingDetailView: View {
     @Query private var templates: [SummaryTemplate]
     
     var body: some View {
-        HStack(spacing: 0) {
+        if meeting.isDeleted {
+            ContentUnavailableView("Meeting Deleted", systemImage: "trash")
+        } else {
+            HStack(spacing: 0) {
             VStack(spacing: 0) {
                 // Search Bar in Middle Section
                 HStack {
@@ -65,6 +68,7 @@ struct MeetingDetailView: View {
                                 Button("Regenerate Transcription", systemImage: "waveform") {
                                     regenerateTranscription()
                                 }
+                                .disabled(whisperService.isTranscribing || transcriptionService.isTranscribing)
                                 Button("Delete Meeting", systemImage: "trash", role: .destructive) {
                                     modelContext.delete(meeting)
                                 }
@@ -210,6 +214,7 @@ struct MeetingDetailView: View {
                 MeetingChatView(meeting: meeting, aiservice: aiservice)
                     .transition(.move(edge: .trailing))
             }
+        }
         }
     }
     

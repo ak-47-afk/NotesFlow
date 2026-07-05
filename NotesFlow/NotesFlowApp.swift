@@ -28,7 +28,29 @@ struct NotesFlowApp: App {
             ChatMessage.self,
             SummaryTemplate.self
         ])
-        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+        
+        let fileManager = FileManager.default
+        let appSupport = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+        let notesFlowDir = appSupport.appendingPathComponent("NotesFlow", isDirectory: true)
+        
+        if !fileManager.fileExists(atPath: notesFlowDir.path) {
+            try? fileManager.createDirectory(at: notesFlowDir, withIntermediateDirectories: true)
+        }
+        
+        let storeURL = notesFlowDir.appendingPathComponent("NotesFlow.store")
+        
+        // Migrate from old generic default.store if it exists and NotesFlow.store doesn't
+        let oldStoreURL = appSupport.appendingPathComponent("default.store")
+        if fileManager.fileExists(atPath: oldStoreURL.path) && !fileManager.fileExists(atPath: storeURL.path) {
+            try? fileManager.moveItem(at: oldStoreURL, to: storeURL)
+            let oldShm = appSupport.appendingPathComponent("default.store-shm")
+            let oldWal = appSupport.appendingPathComponent("default.store-wal")
+            if fileManager.fileExists(atPath: oldShm.path) { try? fileManager.moveItem(at: oldShm, to: notesFlowDir.appendingPathComponent("NotesFlow.store-shm")) }
+            if fileManager.fileExists(atPath: oldWal.path) { try? fileManager.moveItem(at: oldWal, to: notesFlowDir.appendingPathComponent("NotesFlow.store-wal")) }
+            AppLogger.info("Migrated legacy database to secure NotesFlow directory.")
+        }
+        
+        let modelConfiguration = ModelConfiguration("NotesFlow", schema: schema, url: storeURL)
 
         do {
             return try ModelContainer(for: schema, configurations: [modelConfiguration])

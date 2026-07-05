@@ -247,6 +247,15 @@ struct MainSplitView: View {
             newMeeting.audioFilePath = destinationURL.path
             newMeeting.source = "Uploaded Audio"
             
+            // Extract creation date from original file
+            if let resourceValues = try? url.resourceValues(forKeys: [.creationDateKey]),
+               let creationDate = resourceValues.creationDate {
+                newMeeting.date = creationDate
+            } else if let attributes = try? fileManager.attributesOfItem(atPath: url.path),
+                      let creationDate = attributes[.creationDate] as? Date {
+                newMeeting.date = creationDate
+            }
+            
             // Calculate exact duration using AVURLAsset
             let asset = AVURLAsset(url: destinationURL)
             let durationInSeconds = CMTimeGetSeconds(asset.duration)
