@@ -3,7 +3,7 @@ import SwiftUI
 struct OnboardingView: View {
     @AppStorage("hasCompletedOnboarding") var hasCompletedOnboarding: Bool = false
     @State private var currentStep = 0
-    @State private var apiKey: String = ""
+    @AppStorage("geminiAPIKey") private var apiKey: String = ""
     @State private var isKeyVisible = false
     
     // Services
@@ -182,9 +182,7 @@ struct StepThreeView: View {
     var onBack: () -> Void
     var onContinue: () -> Void
     
-    @State private var micGranted = false
-    @State private var audioGranted = false
-    @State private var screenGranted = false
+    @StateObject private var permissions = PermissionsHelper()
     
     var body: some View {
         VStack(spacing: 20) {
@@ -204,25 +202,10 @@ struct StepThreeView: View {
                     iconBg: Color.blue.opacity(0.2),
                     iconColor: .blue,
                     title: "Microphone",
-                    description: "Capture your voice during meetings.",
-                    isGranted: micGranted,
+                    description: "Required to record audio for transcription.",
+                    isGranted: permissions.microphoneGranted,
                     action: {
-                        transcriptionService.requestPermissions { granted in
-                            micGranted = granted
-                        }
-                    }
-                )
-                
-                PermissionRow(
-                    icon: "speaker.wave.2.fill",
-                    iconBg: Color.gray.opacity(0.2),
-                    iconColor: .primary,
-                    title: "System Audio",
-                    description: "Capture what others are saying.",
-                    isGranted: audioGranted,
-                    action: {
-                        // Placeholder for system audio perm
-                        audioGranted = true
+                        permissions.requestMicrophone()
                     }
                 )
                 
@@ -230,12 +213,23 @@ struct StepThreeView: View {
                     icon: "display",
                     iconBg: Color.gray.opacity(0.2),
                     iconColor: .primary,
-                    title: "Screen Recording",
-                    description: "Detect meetings on Zoom, Meet, Teams.",
-                    isGranted: screenGranted,
+                    title: "Screen & System Audio",
+                    description: "Required to automatically detect meetings from window titles.",
+                    isGranted: permissions.screenRecordingGranted,
                     action: {
-                        // Placeholder for screen recording perm
-                        screenGranted = true
+                        permissions.requestScreenRecording()
+                    }
+                )
+                
+                PermissionRow(
+                    icon: "figure.roll",
+                    iconBg: Color.gray.opacity(0.2),
+                    iconColor: .primary,
+                    title: "Accessibility",
+                    description: "Required for native meeting detection if Screen Recording is denied.",
+                    isGranted: permissions.accessibilityGranted,
+                    action: {
+                        permissions.openAccessibilitySettings()
                     }
                 )
             }
@@ -250,9 +244,15 @@ struct StepThreeView: View {
                 Button(action: onContinue) {
                     Text("Continue →")
                 }
-                .buttonStyle(PrimaryButtonStyle(isEnabled: micGranted)) // Assuming mic is minimum
-                .disabled(!micGranted)
+                .buttonStyle(PrimaryButtonStyle()) 
+                // We can let them continue even without granting everything, 
+                // because they can do it later in settings. 
+                // Or require mic at least:
+                .disabled(!permissions.microphoneGranted)
             }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.willBecomeActiveNotification)) { _ in
+            permissions.checkPermissions()
         }
     }
 }
