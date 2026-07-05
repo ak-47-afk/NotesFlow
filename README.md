@@ -26,12 +26,6 @@ NotesFlow is a powerful, privacy-focused macOS application designed to automatic
 3. Wait for Xcode to resolve the Swift Package Dependencies (`WhisperKit` and `swift-argument-parser`).
 4. Build and Run the project (`Cmd + R`).
 
-**Note for End-Users downloading the Release:**
-If you download the pre-built `.dmg` from the GitHub Releases page, macOS will quarantine it (since it uses an Ad-Hoc open source signature). To ensure permissions for Screen Recording work, you must remove the quarantine flag after dragging it to Applications:
-```bash
-xattr -cr /Applications/NotesFlow.app
-```
-
 ### Privacy & Permissions
 On first launch, NotesFlow will request standard macOS permissions required to function:
 - **Screen Recording**: To capture system audio (like voices from Zoom or Google Meet).
