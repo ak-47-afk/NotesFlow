@@ -504,12 +504,16 @@ struct MainSplitView: View {
         modelContext.insert(liveSegment)
         newMeeting.transcript.append(liveSegment)
         
-        do {
-            try transcriptionService.startLiveTranscription { text, _ in
-                liveSegment.text = text
+        let tService = transcriptionService
+        audioService.onRawMicBuffer = { buffer in
+            tService.appendBuffer(buffer)
+        }
+        DispatchQueue.global(qos: .userInitiated).async {
+            tService.startLiveTranscription { text, _ in
+                DispatchQueue.main.async {
+                    liveSegment.text = text
+                }
             }
-        } catch {
-            print("Failed to start live transcription: \(error)")
         }
     }
     

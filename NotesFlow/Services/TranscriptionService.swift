@@ -10,7 +10,6 @@ class TranscriptionService {
     private let speechRecognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
     private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
     private var recognitionTask: SFSpeechRecognitionTask?
-    private let audioEngine = AVAudioEngine()
     
     func requestPermissions(completion: @escaping (Bool) -> Void) {
         SFSpeechRecognizer.requestAuthorization { authStatus in
@@ -20,7 +19,10 @@ class TranscriptionService {
         }
     }
     
-    func startLiveTranscription(onUpdate: @escaping (String, TimeInterval) -> Void) throws {
+    /// Start live transcription using externally-provided audio buffers.
+    /// Call `appendBuffer(_:)` to feed audio data from any source (e.g. the mic tap in SystemAudioCapture).
+    /// This does NOT create its own AVAudioEngine, eliminating hardware contention.
+    func startLiveTranscription(onUpdate: @escaping (String, TimeInterval) -> Void) {
         if let recognitionTask = recognitionTask {
             recognitionTask.cancel()
             self.recognitionTask = nil
@@ -28,42 +30,48 @@ class TranscriptionService {
         
         recognitionRequest = SFSpeechAudioBufferRecognitionRequest()
         guard let recognitionRequest = recognitionRequest else {
-            fatalError("Unable to create SFSpeechAudioBufferRecognitionRequest")
+            print("Unable to create SFSpeechAudioBufferRecognitionRequest")
+            return
         }
         
         recognitionRequest.shouldReportPartialResults = true
         
-        recognitionTask = speechRecognizer?.recognitionTask(with: recognitionRequest) { result, error in
+        recognitionTask = speechRecognizer?.recognitionTask(with: recognitionRequest) { [weak self] result, error in
+            guard let self else { return }
             var isFinal = false
             if let result = result {
-                self.currentTranscript = result.bestTranscription.formattedString
+                let text = result.bestTranscription.formattedString
                 let timestamp = Date().timeIntervalSince1970
-                onUpdate(self.currentTranscript, timestamp)
+                DispatchQueue.main.async {
+                    self.currentTranscript = text
+                    onUpdate(text, timestamp)
+                }
                 isFinal = result.isFinal
             }
             if error != nil || isFinal {
-                self.audioEngine.stop()
-                self.audioEngine.inputNode.removeTap(onBus: 0)
-                self.recognitionRequest = nil
-                self.recognitionTask = nil
-                self.isTranscribing = false
+                DispatchQueue.main.async {
+                    self.recognitionRequest = nil
+                    self.recognitionTask = nil
+                    self.isTranscribing = false
+                }
             }
         }
         
-        let recordingFormat = audioEngine.inputNode.outputFormat(forBus: 0)
-        audioEngine.inputNode.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { buffer, _ in
-            self.recognitionRequest?.append(buffer)
+        DispatchQueue.main.async {
+            self.isTranscribing = true
         }
-        
-        audioEngine.prepare()
-        try audioEngine.start()
-        isTranscribing = true
+    }
+    
+    /// Feed an audio buffer from an external source into the speech recognizer.
+    func appendBuffer(_ buffer: AVAudioPCMBuffer) {
+        recognitionRequest?.append(buffer)
     }
     
     func stopLiveTranscription() {
-        audioEngine.stop()
         recognitionRequest?.endAudio()
-        isTranscribing = false
+        DispatchQueue.main.async {
+            self.isTranscribing = false
+        }
     }
     
 }

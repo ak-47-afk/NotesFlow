@@ -61,9 +61,16 @@ struct FloatingRecorderView: View {
             }
             
             audioService.startRecording()
-            try? transcriptionService.startLiveTranscription { text, timestamp in
-                let segment = TranscriptSegment(text: text, timestamp: timestamp)
-                segment.meeting = meeting
+            audioService.onRawMicBuffer = { buffer in
+                transcriptionService.appendBuffer(buffer)
+            }
+            DispatchQueue.global(qos: .userInitiated).async {
+                transcriptionService.startLiveTranscription { text, timestamp in
+                    DispatchQueue.main.async {
+                        let segment = TranscriptSegment(text: text, timestamp: timestamp)
+                        segment.meeting = meeting
+                    }
+                }
             }
         }
     }

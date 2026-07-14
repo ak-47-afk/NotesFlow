@@ -10,10 +10,34 @@ actor WhisperRunner {
     private let kit: WhisperKit
     init(kit: WhisperKit) { self.kit = kit }
     func transcribe(audioArray: [Float]) async throws -> [TranscriptionResult] {
-        return try await kit.transcribe(audioArray: audioArray)
+        let decodeOptions = DecodingOptions(
+            verbose: false,
+            task: .transcribe,
+            language: "en",
+            temperatureFallbackCount: 5,
+            sampleLength: 224,
+            withoutTimestamps: false,
+            suppressBlank: true,
+            compressionRatioThreshold: 2.4,
+            logProbThreshold: -1.0,
+            noSpeechThreshold: 0.6
+        )
+        return try await kit.transcribe(audioArray: audioArray, decodeOptions: decodeOptions)
     }
     func transcribe(audioPath: String) async throws -> [TranscriptionResult] {
-        return try await kit.transcribe(audioPath: audioPath)
+        let decodeOptions = DecodingOptions(
+            verbose: false,
+            task: .transcribe,
+            language: "en",
+            temperatureFallbackCount: 5,
+            sampleLength: 224,
+            withoutTimestamps: false,
+            suppressBlank: true,
+            compressionRatioThreshold: 2.4,
+            logProbThreshold: -1.0,
+            noSpeechThreshold: 0.6
+        )
+        return try await kit.transcribe(audioPath: audioPath, decodeOptions: decodeOptions)
     }
 }
 
@@ -41,7 +65,7 @@ class WhisperTranscriptionService {
     // MARK: - Model Selection
     @ObservationIgnored
     var selectedModel: String {
-        get { UserDefaults.standard.string(forKey: "whisperModel") ?? "base" } // Default to fast model
+        get { UserDefaults.standard.string(forKey: "whisperModel") ?? "large-v3-v20240930_turbo" } // Default to best model
         set { UserDefaults.standard.set(newValue, forKey: "whisperModel") }
     }
     

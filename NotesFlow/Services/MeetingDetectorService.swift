@@ -6,6 +6,7 @@ class MeetingDetectorService: NSObject {
 
     private var timer: Timer?
     private var detectedMeetings = [String: Date]()
+    private var cachedActiveMeetings = [(name: String, id: String)]()
     private var isMonitoringStarted = false // Prevent duplicate timers
 
     private let browserIdentifiers = [
@@ -32,6 +33,11 @@ class MeetingDetectorService: NSObject {
         timer?.invalidate()
         // CRITICAL: dispatch all detection work off the main thread.
         // pmset, ps, and AXUIElement calls are blocking — running them on main causes the UI freeze.
+        // Initial fetch
+        DispatchQueue.global(qos: .utility).async {
+            self.checkForMeetings()
+        }
+        
         timer = Timer.scheduledTimer(withTimeInterval: 10.0, repeats: true) { [weak self] _ in
             DispatchQueue.global(qos: .utility).async {
                 self?.checkForMeetings()
@@ -52,6 +58,10 @@ class MeetingDetectorService: NSObject {
     }
 
     func getActiveMeetings() -> [(name: String, id: String)] {
+        return cachedActiveMeetings
+    }
+
+    private func fetchActiveMeetings() -> [(name: String, id: String)] {
         var activeMeetings: [(name: String, id: String)] = []
         let runningApps = NSWorkspace.shared.runningApplications
         let accessGranted = AXIsProcessTrustedWithOptions(nil)
@@ -144,7 +154,8 @@ class MeetingDetectorService: NSObject {
     // MARK: - Meeting Check Loop (runs on background thread)
 
     private func checkForMeetings() {
-        let meetings = getActiveMeetings()
+        let meetings = fetchActiveMeetings()
+        cachedActiveMeetings = meetings
         let now = Date()
 
         var toNotify: [(name: String, id: String)] = []
