@@ -336,6 +336,7 @@ struct MeetingDetailView: View {
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
         pasteboard.setString(text, forType: .string)
+        presentShareSheet(items: [text])
     }
     
     private func shareTranscript() {
@@ -343,6 +344,7 @@ struct MeetingDetailView: View {
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
         pasteboard.setString(text, forType: .string)
+        presentShareSheet(items: [text])
     }
     
     private func shareRecording() {
@@ -350,6 +352,13 @@ struct MeetingDetailView: View {
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
         pasteboard.writeObjects([url as NSPasteboardWriting])
+        presentShareSheet(items: [url])
+    }
+    
+    private func presentShareSheet(items: [Any]) {
+        guard let window = NSApp.keyWindow, let view = window.contentView else { return }
+        let picker = NSSharingServicePicker(items: items)
+        picker.show(relativeTo: NSRect(x: view.bounds.midX, y: view.bounds.midY, width: 0, height: 0), of: view, preferredEdge: .minY)
     }
     
     private func formatTime(_ ts: TimeInterval) -> String {
